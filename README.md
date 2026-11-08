@@ -1,6 +1,6 @@
 # Anvil
 
-Pull request review that runs on your own Claude and Codex subscriptions and shows up in GitHub as a normal check.
+Pull request review that runs on the AI subscriptions you already have, mixes model families when you have more than one, and shows up in GitHub as a normal check.
 
 Anvil is an installable agent skill. It splits a review into lenses (correctness, security, durability, concurrency, tests and more), gives each lens to a fresh, read-only reviewer, requires evidence for every finding, and posts the combined result to the PR as the `anvil/review` commit status, plus one summary comment it keeps up to date.
 
@@ -8,7 +8,7 @@ Nothing runs on GitHub Actions or a hosted service, so it works on repositories 
 
 ## Install
 
-Requirements: Node 20 or later, the GitHub CLI signed in (`gh auth login`), and Claude Code and/or Codex signed in.
+Requirements: Node 20 or later, the GitHub CLI signed in (`gh auth login`), and at least one signed-in agent: Claude Code or Codex, used directly or through T3 Code.
 
 ```sh
 git clone <this repository> ~/anvil
@@ -19,11 +19,11 @@ The installer links the skill into `~/.claude/skills`, `~/.codex/skills` and `~/
 
 ## Use
 
-In Claude Code, Codex or T3 Code, from the repository you want reviewed:
+In Claude Code, Codex or T3 Code, from the repository you want reviewed (run `node ~/anvil/skills/anvil/scripts/anvil.mjs providers` to see which of your subscriptions it found):
 
 ```text
-Use the anvil skill to review PR 118.
-Use the anvil skill to refresh the review of PR 118 after my push.
+Use the anvil skill to review PR 42.
+Use the anvil skill to refresh the review of PR 42 after my push.
 ```
 
 Add `.anvil/` to that repository's `.gitignore`; Anvil stores verdicts there.
@@ -42,7 +42,7 @@ GitHub only enforces a status as a required check on plans with branch protectio
 
 - One lens per reviewer, with fresh context and no shared conclusions.
 - A blocking finding needs a reachable scenario and evidence; unconfirmed findings cannot block.
-- Correctness, security, durability and concurrency get a second reviewer from the other model family when it is available.
+- Lenses are spread across your signed-in providers, and correctness, security, durability and concurrency get a second reviewer from a different model family when one is available.
 - Verdicts are tied to a commit; a push makes them stale and the check returns to pending.
 - Your subscriptions, your limits: Anvil never pools accounts, asks for API keys, or switches provider silently.
 
@@ -51,3 +51,7 @@ GitHub only enforces a status as a required check on plans with branch protectio
 ```sh
 npm test
 ```
+
+## Licence
+
+MIT. See `LICENSE`.

@@ -5,20 +5,20 @@ Each reviewer returns one JSON object per lens. `anvil.mjs record` validates it.
 ```json
 {
   "lens": "durability",
-  "sha": "1e4cd308325d00a27a6e4647ff962886036b1fa7",
+  "sha": "3f2c9a1d7e5b4c6a8f0e1d2c3b4a5968778695a4",
   "reviewer": "fresh-context Claude Code subagent; Codex cross-check",
-  "model": "claude-opus-5-5; gpt-6.1-sol",
+  "model": "claude; codex",
   "verdict": "request_changes",
   "score": 62,
-  "summary": "Plan withdrawal deletes other plans' device drafts.",
+  "summary": "Revoking access to one project deletes unsaved drafts for other projects.",
   "findings": [
     {
       "severity": "blocker",
       "status": "open",
-      "file": "plugins/courses/src/teaching.mjs",
+      "file": "src/drafts/recovery.ts",
       "line": 131,
-      "scenario": "Revoke a co-teacher from plan A; their unsaved draft for plan B is deleted.",
-      "evidence": "test/teaching-recovery-scope.test.ts fails on the current head: expected beta recovery to survive."
+      "scenario": "Remove a member from project A; their unsaved draft for project B is deleted.",
+      "evidence": "test/recovery-scope.test.ts fails on the current head: expected project B's draft to survive."
     }
   ]
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { COMMENT_MARKER, gate, loadLenses, parseVerdict, renderSummary, staleLenses } from "./anvil.mjs";
+import { COMMENT_MARKER, detectProviders, gate, loadLenses, parseVerdict, planReviews, renderSummary, staleLenses } from "./anvil.mjs";
 
 const lenses = loadLenses();
 const ids = lenses.map((lens) => lens.id);
@@ -67,4 +67,37 @@ test("stale detection reruns lenses whose newest verdict predates the head", () 
   assert.deepEqual(result[0], { lens: ids[0], action: "rerun", sha: older, changedFiles: ["src/a.ts"] });
   assert.deepEqual(result[1], { lens: ids[1], action: "current", sha: head });
   assert.equal(result[2].action, "review");
+});
+
+test("provider detection reports signed-in, signed-out, installed and absent tools without calling a model", () => {
+  const paths = { claude: "/bin/claude", codex: null, gemini: "/bin/gemini", "cursor-agent": null };
+  const calls = [];
+  const run = (file, argv) => {
+    calls.push([file, ...argv].join(" "));
+    if (file === "/bin/claude") return '{ "loggedIn": true }';
+    if (file === "/bin/sh") return "/home/u/.t3/tools/codex/1.0/bin/codex\n";
+    if (file.endsWith("/codex")) return "Not logged in";
+    return "";
+  };
+  const found = detectProviders({ which: (name) => paths[name], run, home: "/home/u" });
+  assert.deepEqual(
+    found.map(({ id, state }) => [id, state]),
+    [["claude", "signed-in"], ["codex", "signed-out"], ["gemini", "installed"], ["cursor-agent", "absent"]],
+  );
+  assert.equal(found[1].path, "/home/u/.t3/tools/codex/1.0/bin/codex", "falls back to the T3 Code bundled Codex");
+  assert.ok(calls.every((call) => /auth status|login status|ls -d/.test(call)), "only status commands run");
+});
+
+test("the plan spreads lenses across signed-in providers and cross-checks high-risk lenses with another family", () => {
+  const claude = { id: "claude", family: "anthropic", state: "signed-in" };
+  const codex = { id: "codex", family: "openai", state: "signed-in" };
+  const both = planReviews(lenses, [claude, codex]);
+  assert.deepEqual(new Set(both.map((entry) => entry.reviewers[0])), new Set(["claude", "codex"]));
+  for (const entry of both.filter((item) => ["correctness", "security", "durability", "concurrency"].includes(item.lens))) {
+    assert.equal(entry.reviewers.length, 2);
+    assert.notEqual(entry.reviewers[0], entry.reviewers[1]);
+  }
+  const single = planReviews(lenses, [claude, { ...codex, state: "signed-out" }]);
+  assert.ok(single.every((entry) => entry.reviewers.length === 1 && entry.reviewers[0] === "claude" && !entry.crossChecked));
+  assert.throws(() => planReviews(lenses, [{ ...claude, state: "absent" }]), /No signed-in reviewer/);
 });

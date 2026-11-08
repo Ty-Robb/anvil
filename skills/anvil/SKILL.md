@@ -5,7 +5,7 @@ description: Review a GitHub pull request with independent, lens-by-lens reviewe
 
 # Anvil
 
-Anvil turns a pull request into one GitHub check, `anvil/review`, backed by independent reviews that each answer one question. Reviews run on the operator's own signed-in Claude Code and Codex subscriptions. Nothing runs on GitHub Actions or a hosted service.
+Anvil turns a pull request into one GitHub check, `anvil/review`, backed by independent reviews that each answer one question. Reviews run on whichever subscriptions the operator has already signed in to, such as Claude Code and Codex, mixing model families when more than one is available. Nothing runs on GitHub Actions or a hosted service.
 
 Scripts live at `scripts/anvil.mjs` beside this file and need Node 20 or later and an authenticated `gh`. Run them from the repository under review; they store verdicts in `.anvil/` there, which belongs in `.gitignore`.
 
@@ -14,7 +14,7 @@ Scripts live at `scripts/anvil.mjs` beside this file and need Node 20 or later a
 - **One lens, one fresh reviewer.** Each lens in `references/lenses.json` gets its own reviewer with no prior context, briefed with the lens question and focus, the PR's stated goal, the head commit and the diff. Never review several lenses in one pass, and never give a reviewer your own conclusions.
 - **Evidence or it doesn't count.** A blocker or should-fix finding needs a concrete, reachable scenario and evidence: a failing test, a command and its output, or a cited line with the path that reaches it. Anything else is labelled speculative and cannot block.
 - **Verify before you trust.** Before acting on a blocking finding, reproduce it yourself or with a second fresh reviewer. Fix confirmed findings with a regression test that fails without the fix; dismiss unconfirmed ones with the reason recorded in the verdict.
-- **Two model families for blocking lenses.** Correctness, security, durability and concurrency get a second, independent pass from the other provider (see `references/provider-routing.md`). Disagreement is resolved by reproduction, not by vote.
+- **Use the mix you have.** Find the operator's available providers first (`references/provider-routing.md`), spread the lenses across them, and give correctness, security, durability and concurrency a second reviewer from a different model family whenever one is available. Disagreement is resolved by reproduction, not by vote.
 - **Verdicts are tied to a commit.** Every verdict names the full head SHA it reviewed. A push makes earlier verdicts stale; the gate never counts them. Never edit a recorded verdict to claim it covers a newer commit.
 - **Never invent an accept.** If a lens was not reviewed at the head, the check stays pending. Do not post success to unblock a merge.
 - **The operator's subscriptions, the operator's limits.** Run reviews only on accounts the operator signed in to, on their own machine or self-hosted runner. Never pool or share accounts. Stop and report when a usage limit is hit rather than switching provider silently.
@@ -22,11 +22,13 @@ Scripts live at `scripts/anvil.mjs` beside this file and need Node 20 or later a
 ## Commands
 
 ```sh
-node scripts/anvil.mjs lenses                         # print the lens catalogue
-node scripts/anvil.mjs context --pr 118               # write .anvil/pr-118/<sha>/{context.json,diff.patch}
-node scripts/anvil.mjs record --pr 118 --file v.json  # validate and store one lens verdict for the head
-node scripts/anvil.mjs stale --pr 118                 # lenses to (re)review and files changed since each verdict
-node scripts/anvil.mjs gate --pr 118 [--post]         # aggregate; --post sets the status and updates one PR comment
+node scripts/anvil.mjs providers                     # signed-in review tools (status commands only, no model calls)
+node scripts/anvil.mjs plan                          # which provider reviews which lens
+node scripts/anvil.mjs lenses                        # print the lens catalogue
+node scripts/anvil.mjs context --pr 42               # write .anvil/pr-42/<sha>/{context.json,diff.patch}
+node scripts/anvil.mjs record --pr 42 --file v.json  # validate and store one lens verdict for the head
+node scripts/anvil.mjs stale --pr 42                 # lenses to (re)review and files changed since each verdict
+node scripts/anvil.mjs gate --pr 42 [--post]         # aggregate; --post sets the status and updates one PR comment
 ```
 
 `gate` exits 0 only when every lens has a passing verdict at the head. With `--post` it writes the `anvil/review` commit status (success, failure or pending) and creates or updates a single marked summary comment on the PR.

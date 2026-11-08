@@ -1,19 +1,30 @@
 # Provider routing
 
-Anvil uses whichever of these the operator has signed in to. It never asks for API keys and never uses an account the operator did not sign in to.
+Anvil reviews with whatever the operator already has: their own signed-in Claude, Codex or other subscriptions. It never asks for API keys, never pools accounts, and never uses an account the operator did not sign in to.
 
-| Runtime | How a fresh reviewer runs | Profile |
-| --- | --- | --- |
-| Claude Code | A subagent with no inherited context (`Agent`, general-purpose), or `claude -p` headless | `agents/claude/anvil-reviewer.md` |
-| Codex | A spawned agent, or `codex exec` headless | `agents/codex/anvil_reviewer.toml` |
-| T3 Code | The native subagent for the current provider; `delegate_task` for the other provider | Either profile |
+## Find what is available
 
-## Which provider reviews which lens
+- **Inside T3 Code, Orca or another orchestrator:** use the host's own list of providers, because the host may hold sign-ins the CLIs on `PATH` do not (T3 Code runs Codex under its own login). In T3 Code, call `orchestrator_capabilities` once and treat each provider it reports as available; launch the current provider's reviewers natively and the others with `delegate_task`.
+- **Anywhere else:** run `node scripts/anvil.mjs providers`. It runs only sign-in status commands, never a model call, and reports each tool as `signed-in`, `signed-out`, `installed` (no status command, so sign-in is unknown) or `absent`. Treat only `signed-in` as available.
 
-- The provider running the session reviews every lens.
-- Correctness, security, durability and concurrency also get a pass from the other provider when it is signed in. If it is not, say so in the verdict's `reviewer` field; the lens can still pass on one review.
-- Verification of a blocking finding uses a fresh reviewer, preferably on the provider that did not raise it.
+## Plan the mix
+
+Run `node scripts/anvil.mjs plan` (or apply the same rule to the host's provider list):
+
+- Lenses are spread across the available providers in turn, so each family reviews part of the PR.
+- Correctness, security, durability and concurrency also get a second reviewer from a different model family whenever one is available.
+- With one provider, every lens is reviewed by it once; note in each verdict's `reviewer` field that no cross-check was available.
+- Verification of a blocking finding uses a fresh reviewer, preferably from the family that did not raise it.
+
+## Running a reviewer headless
+
+| Tool | Read-only review command |
+| --- | --- |
+| Claude Code | `claude -p "<brief>" --permission-mode plan --output-format json` |
+| Codex | `codex exec --sandbox read-only -o <verdict.json> "<brief>"` |
+
+Each brief is self-contained: goal, repository path, head SHA, lens question and focus, and the verdict format. Profiles for subagent use are in `agents/`.
 
 ## Limits
 
-Subscriptions have usage limits. When a reviewer fails on a limit, stop that lens, record nothing for it, leave the check pending, and tell the operator which lenses remain and when to retry. Do not fall back to another account or an API key.
+When a reviewer stops on a usage limit, record nothing for that lens, leave the check pending, and tell the operator which lenses remain and when to retry. Do not switch to another account or an API key.

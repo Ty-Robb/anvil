@@ -100,6 +100,41 @@ export function staleLenses(lenses, verdicts, headSha, changedSince) {
   });
 }
 
+export const CROSS_CHECKED = ["correctness", "security", "durability", "concurrency"];
+
+export const PROVIDERS = [
+  { id: "claude", family: "anthropic", command: "claude", status: ["auth", "status"], signedIn: (out) => /"loggedIn"\s*:\s*true/.test(out) },
+  { id: "codex", family: "openai", command: "codex", status: ["login", "status"], signedIn: (out) => /logged in/i.test(out) && !/not logged in/i.test(out) },
+  { id: "gemini", family: "google", command: "gemini" },
+  { id: "cursor-agent", family: "cursor", command: "cursor-agent", status: ["status"], signedIn: (out) => /logged in/i.test(out) && !/not logged in/i.test(out) },
+];
+
+export function detectProviders({ which, run, home = process.env.HOME ?? "" } = {}) {
+  const locate = (provider) => {
+    const found = which(provider.command);
+    if (found || provider.id !== "codex") return found;
+    const bundled = run("/bin/sh", ["-c", `ls -d "${home}"/.t3/tools/codex/*/bin/codex 2>/dev/null | tail -1`]).trim();
+    return bundled || null;
+  };
+  return PROVIDERS.map((provider) => {
+    const path = locate(provider);
+    if (!path) return { id: provider.id, family: provider.family, state: "absent" };
+    if (!provider.status) return { id: provider.id, family: provider.family, path, state: "installed" };
+    const output = run(path, provider.status);
+    return { id: provider.id, family: provider.family, path, state: provider.signedIn(output) ? "signed-in" : "signed-out" };
+  });
+}
+
+export function planReviews(lenses, providers) {
+  const usable = providers.filter((provider) => provider.state === "signed-in");
+  if (!usable.length) throw new Error("No signed-in reviewer found. Sign in to Claude Code or Codex, then retry.");
+  return lenses.map((lens, index) => {
+    const primary = usable[index % usable.length];
+    const second = CROSS_CHECKED.includes(lens.id) ? usable.find((provider) => provider.family !== primary.family) : undefined;
+    return { lens: lens.id, reviewers: second ? [primary.id, second.id] : [primary.id], crossChecked: Boolean(second) };
+  });
+}
+
 const gh = (args, input) => execFileSync("gh", args, { encoding: "utf8", input, maxBuffer: 64 * 1024 * 1024 });
 
 function pullRequest(pr, repo) {
@@ -145,6 +180,19 @@ async function main(argv) {
   const root = args.root ?? process.cwd();
   const lenses = loadLenses(args.lenses);
   if (command === "lenses") return void process.stdout.write(`${JSON.stringify(lenses, null, 2)}\n`);
+  if (command === "providers" || command === "plan") {
+    const run = (file, argv) => {
+      try {
+        return execFileSync(file, argv, { encoding: "utf8", timeout: 20000, stdio: ["ignore", "pipe", "pipe"] });
+      } catch (error) {
+        return `${error.stdout ?? ""}${error.stderr ?? ""}`;
+      }
+    };
+    const which = (name) => run("/bin/sh", ["-c", `command -v ${name}`]).trim() || null;
+    const providers = detectProviders({ which, run });
+    const output = command === "providers" ? providers : planReviews(lenses, providers);
+    return void process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+  }
   if (!args.pr) throw new Error("--pr <number> is required");
   const pr = pullRequest(args.pr, args.repo);
   const repo = args.repo ?? repoOf(pr.url);
