@@ -45,12 +45,12 @@ export function parseVerdict(value, lensIds) {
   return verdict;
 }
 
-export function gate(lenses, verdicts, headSha) {
+export function gate(lenses, verdicts, headSha, { strict = false } = {}) {
   const byLens = new Map(verdicts.filter((v) => v.sha === headSha).map((v) => [v.lens, v]));
   const rows = lenses.map((lens) => {
     const verdict = byLens.get(lens.id);
     if (!verdict) return { lens, state: "missing" };
-    const open = verdict.findings.filter((f) => f.status === "open" && f.severity !== "nit");
+    const open = verdict.findings.filter((f) => f.status === "open" && (strict || f.severity !== "nit"));
     return { lens, verdict, state: verdict.verdict === "request_changes" || open.length ? "failing" : "passing", open };
   });
   const missing = rows.filter((row) => row.state === "missing");
@@ -228,7 +228,7 @@ async function main(argv) {
     return void process.stdout.write(`${JSON.stringify(staleLenses(lenses, readVerdicts(dir), pr.headRefOid, changedSince), null, 2)}\n`);
   }
   if (command === "gate") {
-    const result = gate(lenses, readVerdicts(dir), pr.headRefOid);
+    const result = gate(lenses, readVerdicts(dir), pr.headRefOid, { strict: Boolean(args.strict) });
     const summary = renderSummary(result, pr.headRefOid);
     process.stdout.write(summary);
     if (args.post) {

@@ -122,3 +122,15 @@ test("long finding scenarios are shortened in the summary comment", () => {
   assert.ok(line.length < 300);
   assert.ok(line.endsWith("…"));
 });
+
+test("strict mode keeps the check failing while any finding, including a nit, is open", () => {
+  const withNit = ids.map((id, index) => verdict(id, index === 0 ? { findings: [finding({ severity: "nit" })] } : {}));
+  assert.equal(gate(lenses, withNit, head).state, "success");
+  const strict = gate(lenses, withNit, head, { strict: true });
+  assert.equal(strict.state, "failure");
+  assert.equal(strict.rows[0].open.length, 1);
+  const dismissed = withNit.map((v, index) =>
+    index === 0 ? { ...v, findings: [finding({ severity: "nit", status: "dismissed", reason: "Out of scope" })] } : v,
+  );
+  assert.equal(gate(lenses, dismissed, head, { strict: true }).state, "success");
+});

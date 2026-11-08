@@ -28,7 +28,7 @@ node scripts/anvil.mjs lenses                        # print the lens catalogue
 node scripts/anvil.mjs context --pr 42               # write .anvil/pr-42/<sha>/{context.json,diff.patch}
 node scripts/anvil.mjs record --pr 42 --file v.json  # validate and store one lens verdict for the head
 node scripts/anvil.mjs stale --pr 42                 # lenses to (re)review and files changed since each verdict
-node scripts/anvil.mjs gate --pr 42 [--post]         # aggregate; --post sets the status and updates one PR comment
+node scripts/anvil.mjs gate --pr 42 [--post] [--strict] # aggregate; --post sets the status and updates one PR comment; --strict also blocks on open nits
 ```
 
 `gate` exits 0 only when every lens has a passing verdict at the head. With `--post` it writes the `anvil/review` commit status (success, failure or pending) and creates or updates a single marked summary comment on the PR.

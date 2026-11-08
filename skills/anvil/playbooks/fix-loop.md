@@ -3,7 +3,7 @@
 Use when the operator asks Anvil to fix a PR, or to "loop until it's done". The loop ends when `anvil/review` is `success` at the PR head, or at a stop condition below. Never end it by relabelling a verdict.
 
 1. **Review or refresh.** If the head has no verdicts, run `review-pr.md`; otherwise run `refresh.md`. Post the gate.
-2. **Collect the work.** List every open blocker and should-fix finding at the head. Group findings that share a root cause; fix the cause once.
+2. **Collect the work.** List every open blocker and should-fix finding at the head; when the operator wants nothing left, include nits and gate with `--strict`. A finding is resolved only as `fixed` (with its test) or `dismissed` (with a stated reason). Group findings that share a root cause; fix the cause once.
 3. **Reproduce first.** For each group, write or adopt a test that fails on the current head for the reason the finding gives. A finding you cannot reproduce goes back to its lens reviewer as `dismissed` with the reason, not into the code.
 4. **Fix the root cause.** Make the smallest change that makes the reproduction pass without weakening another guard. Run the focused tests for every file you touched, then the repository's affected checks.
 5. **Commit and push** the fixes for this round as one commit that names the findings it resolves.
