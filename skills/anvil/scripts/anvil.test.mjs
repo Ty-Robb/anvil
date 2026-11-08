@@ -101,3 +101,16 @@ test("the plan spreads lenses across signed-in providers and cross-checks high-r
   assert.ok(single.every((entry) => entry.reviewers.length === 1 && entry.reviewers[0] === "claude" && !entry.crossChecked));
   assert.throws(() => planReviews(lenses, [{ ...claude, state: "absent" }]), /No signed-in reviewer/);
 });
+
+test("the command runs when invoked through an installed symlink", async () => {
+  const { execFileSync } = await import("node:child_process");
+  const { mkdtempSync, symlinkSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { dirname, join } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const skill = dirname(dirname(fileURLToPath(import.meta.url)));
+  const linked = join(mkdtempSync(join(tmpdir(), "anvil-link-")), "anvil");
+  symlinkSync(skill, linked);
+  const output = execFileSync(process.execPath, [join(linked, "scripts/anvil.mjs"), "lenses"], { encoding: "utf8" });
+  assert.ok(JSON.parse(output).some((lens) => lens.id === "correctness"));
+});
