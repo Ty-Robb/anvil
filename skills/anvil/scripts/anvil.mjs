@@ -65,6 +65,11 @@ export function gate(lenses, verdicts, headSha) {
   return { state, description, rows };
 }
 
+const brief = (text, limit = 220) => {
+  const flat = String(text).replace(/\s+/g, " ").trim();
+  return flat.length > limit ? `${flat.slice(0, limit - 1).trimEnd()}…` : flat;
+};
+
 export function renderSummary(result, headSha) {
   const mark = { passing: "Accept", failing: "Request changes", missing: "Not reviewed" };
   const lines = [
@@ -86,7 +91,9 @@ export function renderSummary(result, headSha) {
   if (open.length) {
     lines.push("", "**Open findings**", "");
     for (const finding of open)
-      lines.push(`- **${finding.severity}** (${finding.lens})${finding.file ? ` \`${finding.file}${finding.line ? `:${finding.line}` : ""}\`` : ""}: ${finding.scenario}`);
+      lines.push(
+        `- **${finding.severity}** (${finding.lens})${finding.file ? ` \`${finding.file}${finding.line ? `:${finding.line}` : ""}\`` : ""}: ${brief(finding.scenario)}`,
+      );
   }
   return `${lines.join("\n")}\n`;
 }

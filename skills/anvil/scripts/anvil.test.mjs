@@ -114,3 +114,11 @@ test("the command runs when invoked through an installed symlink", async () => {
   const output = execFileSync(process.execPath, [join(linked, "scripts/anvil.mjs"), "lenses"], { encoding: "utf8" });
   assert.ok(JSON.parse(output).some((lens) => lens.id === "correctness"));
 });
+
+test("long finding scenarios are shortened in the summary comment", () => {
+  const long = "x".repeat(500);
+  const result = gate(lenses, [verdict(ids[0], { verdict: "request_changes", findings: [finding({ scenario: long })] })], head);
+  const line = renderSummary(result, head).split("\n").find((text) => text.startsWith("- **blocker**"));
+  assert.ok(line.length < 300);
+  assert.ok(line.endsWith("…"));
+});

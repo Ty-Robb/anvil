@@ -1,6 +1,6 @@
 ---
 name: anvil
-description: Review a GitHub pull request with independent, lens-by-lens reviewers running on your own Claude and Codex subscriptions, require evidence for every finding, and post the result to the PR as an `anvil/review` commit status. Use for "anvil", "review PR N", "refresh the review", or "re-check this PR after the latest push".
+description: Review a GitHub pull request, and optionally fix it in a loop until green, with independent, lens-by-lens reviewers running on your own Claude and Codex subscriptions, require evidence for every finding, and post the result to the PR as an `anvil/review` commit status. Use for "anvil", "review PR N", "refresh the review", "re-check this PR after the latest push", or "fix PR N until the review passes".
 ---
 
 # Anvil
@@ -37,6 +37,7 @@ node scripts/anvil.mjs gate --pr 42 [--post]         # aggregate; --post sets th
 
 - Reviewing a PR for the first time → `playbooks/review-pr.md`.
 - The PR changed after a review, or "refresh the review" → `playbooks/refresh.md`.
+- "Fix it", "fix the findings" or "loop until it's done" → `playbooks/fix-loop.md`: review, fix with regression tests, push, refresh, and repeat until `anvil/review` is green or a stop condition applies.
 
 ## References
 

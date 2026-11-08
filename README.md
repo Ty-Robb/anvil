@@ -24,6 +24,7 @@ In Claude Code, Codex or T3 Code, from the repository you want reviewed (run `no
 ```text
 Use the anvil skill to review PR 42.
 Use the anvil skill to refresh the review of PR 42 after my push.
+Use the anvil skill to fix PR 42 until the review passes.
 ```
 
 Add `.anvil/` to that repository's `.gitignore`; Anvil stores verdicts there.
