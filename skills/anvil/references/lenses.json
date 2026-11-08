@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "lenses": [
+    {
+      "id": "correctness",
+      "title": "Correctness",
+      "question": "Does the change do what the PR says, for every input and state it can reach?",
+      "focus": "Trace changed behaviour from entry point to persisted result. Look for wrong branches, off-by-one, missed states, broken invariants, and callers the diff forgot."
+    },
+    {
+      "id": "security",
+      "title": "Security and privacy",
+      "question": "Can anyone read, write or trigger something they should not?",
+      "focus": "Authorization on every read and write, trust boundaries, injection, secrets in logs or responses, data sent to third parties, and endpoints newly reachable from a browser."
+    },
+    {
+      "id": "durability",
+      "title": "Durability and recovery",
+      "question": "Does data survive crashes, retries, restarts and partial failure without loss or duplication?",
+      "focus": "Idempotency, retries, lost updates, migrations, local or device storage, and what a user sees after a failure. Demand a reproduction for any loss claim."
+    },
+    {
+      "id": "concurrency",
+      "title": "Concurrency and races",
+      "question": "What breaks when two actors, tabs, requests or timers interleave?",
+      "focus": "Shared mutable state, stale responses applied after the context changed, check-then-act gaps, in-flight work across navigation, and ordering assumptions."
+    },
+    {
+      "id": "error-evidence",
+      "title": "Errors and evidence",
+      "question": "When something fails, does the user get a truthful message and the operator a usable diagnostic?",
+      "focus": "Swallowed errors, generic messages that hide the cause, errors that leak internals, and failures reported as success."
+    },
+    {
+      "id": "tests",
+      "title": "Test quality",
+      "question": "Would the tests fail if the change were reverted or broken, and do they test behaviour rather than implementation?",
+      "focus": "Run the changed tests. Remove each protection the diff adds, one at a time, and report which removals no test catches. Flag tests that mirror implementation, assert trivia or rely on timing."
+    },
+    {
+      "id": "simplicity",
+      "title": "Simplicity",
+      "question": "Is this the smallest change that solves the problem, without speculative layers?",
+      "focus": "Unneeded abstractions, one-caller wrappers, configuration nobody asked for, dead code, and band-aid guards where a root-cause fix belongs."
+    },
+    {
+      "id": "reuse",
+      "title": "Duplication and reuse",
+      "question": "Does the change re-implement something the codebase or platform already provides?",
+      "focus": "Hand-rolled helpers, parallel code paths, copied logic that will drift, and new mechanisms where an existing one fits."
+    },
+    {
+      "id": "interface",
+      "title": "Interface and experience",
+      "question": "Is the user-facing behaviour clear, accessible and consistent with the rest of the product?",
+      "focus": "Loading, empty, error and recovery states; keyboard and screen-reader access; mobile layout; copy that matches behaviour. Mark not relevant when no user surface changes."
+    },
+    {
+      "id": "claims",
+      "title": "Claims and documentation",
+      "question": "Are the PR description, docs and evidence accurate about what was verified?",
+      "focus": "Overstated verification, stale docs, evidence recorded for a different commit, and limitations left out."
+    },
+    {
+      "id": "integration",
+      "title": "Real integration",
+      "question": "Has the change been exercised against the real dependency it relies on, not only fakes?",
+      "focus": "Providers, databases, queues and external APIs. Name what was mocked, what a bounded real check would need, and its cost. Mark not relevant when no external dependency changes."
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Anvil"
+  short_description: "Lens-by-lens PR review on your own subscriptions, posted as a GitHub check."
+policy:
+  allow_implicit_invocation: false
